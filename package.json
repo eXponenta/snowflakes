@@ -1,0 +1,22 @@
+{
+  "name": "snow",
+  "version": "1.0.0",
+  "description": "Snowball",
+  "main": "index.js",
+  "scripts": {
+    "show": "http-server -p 1010 ."
+  },
+  "keywords": [
+    "snow",
+    "snowflakes",
+    "happynewyear"
+  ],
+  "author": "eXponenta",
+  "license": "ISC",
+  "dependencies": {
+    "pixi.js": "^4.8.2"
+  },
+  "repository": {
+    "origin":"https://github.com/eXponenta/snowflakes.git"
+  }
+}
