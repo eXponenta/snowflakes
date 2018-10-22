@@ -142,6 +142,24 @@ class CircleArea extends PIXI.Circle {
 
 }
 
+//PIXI PATH
+
+PIXI.particles.ParticleRenderer.prototype.uploadTint = function (children, startIndex, amount, array, stride, offset)
+{
+    for (let i = 0; i < amount; ++i)
+    {
+        const sprite = children[startIndex + i];
+        const a = sprite.alpha * 255;
+        const argb = (a<<24) + (a<<16)+(a<<8)+a
+
+        array[offset] = argb;
+        array[offset + stride] = argb;
+        array[offset + (stride * 2)] = argb;
+        array[offset + (stride * 3)] = argb;
+
+        offset += stride * 4;
+    }
+}
 //HELPER FUNC
 
 function Reflect(v, n) {
@@ -181,7 +199,7 @@ var container_back = new PIXI.particles.ParticleContainer(count * 0.3, {
 });
 
 var container_front = new PIXI.particles.ParticleContainer(count * 0.7,  {
-    rotation:true, scale:true, alpha: false
+    rotation:true, scale:true, alpha: true
 });
 
  container_front.blendMode = PIXI.BLEND_MODES.SCREEN;
