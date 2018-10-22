@@ -214,7 +214,7 @@ function init() {
     PIXI.loader
         .add('flakes', './src/images/snflakes.json')
         .add('normals',"./src/images/russkoe_disp.png")
-        .add('logo', './src/images/exponenta.png')
+        .add('logo', './src/images/logo.png')
         .load(startup);
 
     var area = new PIXI.Graphics();
