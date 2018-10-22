@@ -3,30 +3,24 @@
 
 class CircleParticle extends PIXI.Sprite {
 
-    constructor(texture){
+    constructor(texture, startScale){
         super(texture);
+        this.startScale = startScale;
+        //this.blendMode = PIXI.BLEND_MODES.ADD;
 
+        this.anchor.set(0.5)
+        this.pivot.set(0.5);
         this.z_factor = 0;
-        this.anchor.set(0.5);
+        
         this._vel = new PIXI.Point();
         this.bounsness = 0.7;
         this.tilt = 0;
-        this.startScale = 1;
-        this.minScale = this.startScale * 0.25;
-    }
+        this.useForFog = false;
 
-    rebildScale(area){
-        var dx = area.position.x - this.position.x;
-        var dy = area.position.y - this.position.y;
-        var rad = dx*dx + dy*dy;
-
-        var s = Math.sqrt(area.radius * area.radius - rad) / area.radius;
-        this.scale.set(s * (this.startScale - this.minScale) + this.minScale);
-    }
-
-    get radius() {
+        this.scale.set(startScale);
+        
         var b = this.getBounds();
-        return Math.min(b.width, b.height) * 0.5;
+        this.radius = Math.min(b.width, b.height) * 0.5;
     }
 
     get vel() {
@@ -53,6 +47,15 @@ class CircleParticle extends PIXI.Sprite {
         
         this._vel.x = this._vel.x * ns / s;
         this._vel.y = this._vel.y * ns / s;
+        
+        if(this.useForFog){
+            let quad = (this.speed * this.speed) / 100
+
+            quad = Math.max(0, quad - 0.1);
+            
+            this.scale.set(this.startScale * (1 + 10 * quad));
+            this.alpha =  1 -  quad;
+        }
     }
 
     get dir(){
@@ -173,10 +176,16 @@ var dumpingFactor = 0.005;
 var maxSpeed = 10;
 var count = 1000;
 
-var container_back = new PIXI.particles.ParticleContainer(count * 0.3, 
-    {rotation:true, scale:true});
-var container_front = new PIXI.particles.ParticleContainer(count * 0.7, 
-    {rotation:true, scale:true});
+var container_back = new PIXI.particles.ParticleContainer(count * 0.3, {
+    rotation:true, scale:true, alpha:false
+});
+
+var container_front = new PIXI.particles.ParticleContainer(count * 0.7,  {
+    rotation:true, scale:true, alpha: false
+});
+
+ container_front.blendMode = PIXI.BLEND_MODES.SCREEN;
+
 
 var container_midlle = new PIXI.Container();
 
@@ -213,13 +222,15 @@ function init() {
     // Load the bunny texture
     PIXI.loader
         .add('flakes', './src/images/snflakes.json')
-        .add('normals',"./src/images/russkoe_disp.png")
+        .add('normals',"./src/images/russkoe_disp.jpg")
+        .add('mask', "./src/images/mask.jpg")
+        .add('smoke',"./src//images/smoke.png")
         .add('logo', './src/images/logo.png')
         .load(startup);
 
     var area = new PIXI.Graphics();
     area.lineStyle(2, 0xff0000)
-        //.beginFill(0x666666)
+        .beginFill(0x666666)
         .drawRect(
             pAreas[0].x,
             pAreas[0].y,
@@ -229,11 +240,7 @@ function init() {
         //.drawCircle(rndr.width * 0.5, 
         //rndr.height * 0.5, circleArea.radius);
     
-    //container.mask = area;
-   // app.stage.addChild(area);
-    app.stage.addChild(container_back, container_midlle, container_front);
-
-        
+    app.stage.addChild(container_back, container_midlle, container_front);  
 }
 
 function punch(e) {
@@ -279,12 +286,16 @@ function startup()
     new PIXI.Rectangle(0, 0, app.renderer.width, app.renderer.height);
     
     var normals = new PIXI.Sprite(PIXI.loader.resources.normals.texture);
-    
-    //normals.alpha = 0.5;
     normals.anchor.set(0.5, 0);
     normals.position.set(size.width * 0.5, 0);
-    
     normals.scale.set(size.width / (normals.width - 100));
+    
+    app.stage.mask = new PIXI.Sprite(PIXI.loader.resources.mask.texture);
+    app.stage.addChild(app.stage.mask);
+    app.stage.mask.anchor.set(0.5, 0);
+    app.stage.mask.position.set(size.width * 0.5, 0);
+    app.stage.mask.scale.set(size.width / (app.stage.mask.width - 100));
+    
     app.stage.addChild(normals);
    
     app.stage.filters = [
@@ -302,9 +313,16 @@ function startup()
     for(let i = 0; i < count; i++){
         
         let index = Math.floor(Math.random() * textures.length);
-
-        let flakes = new CircleParticle(textures[index]);
         
+        let asSmoke = i > count * 0.5;
+        //let tex = asSmoke ? PIXI.loader.resources.smoke.texture :  textures[index];
+
+        let scl = 0.8 * (Math.random() * 0.5 + 0.5) * ( size.width / referenseWidth);
+     //   flakes.scale.set(scl);
+     
+        let flakes = new CircleParticle(textures[index], scl);
+        flakes.useForFog = asSmoke;
+
         flakes.z_factor = 0.95 + 0.05 * (i % 100) / 100.0;
 
         //console.log(flakes.z_factor);
@@ -320,12 +338,8 @@ function startup()
         flakes.tilt = (0.5 - Math.random()) * 0.1; 
         flakes.bounsness = 0.2 + 0.6 * Math.random();
 
-        let scl = 0.8 * (Math.random() * 0.5 + 0.5) * ( size.width / referenseWidth);
-        flakes.scale.set(scl);
-        //bunny.rebildScale(circleArea);
-        //bunny.scale.set(sta;
-
-        if(i < container_back._maxSize)
+        
+        if(i < count * 0.3)
             container_back.addChild(flakes);
         else
             container_front.addChild(flakes);
